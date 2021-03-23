@@ -1,21 +1,23 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn, ManyToOne,
+  OneToOne,
+  PrimaryColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import Client from './client.entity';
 import { ChatClient } from '../../../core/models/chat-client.model';
 
 @Entity()
 class Message {
-
   @PrimaryGeneratedColumn()
   public id: number;
 
   @Column()
   public message: string;
 
-  @OneToOne(() => Client, {
-    eager: true,
-    cascade: true,
-  })
-  @JoinColumn()
+  @ManyToOne(() => Client, (client: Client) => client.messages)
   public sender: Client;
 }
 

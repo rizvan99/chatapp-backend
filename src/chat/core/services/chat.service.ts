@@ -9,8 +9,8 @@ import Message from '../../infrastructure/data-source/entities/message.entity';
 
 @Injectable()
 export class ChatService implements IChatService {
-  allMessages: ChatMessage[] = [];
-  clients: ChatClient[] = [];
+  //allMessages: ChatMessage[] = [];
+  //clients: ChatClient[] = [];
 
   constructor(
     @InjectRepository(Client) private clientRepository: Repository<Client>,
@@ -44,7 +44,7 @@ export class ChatService implements IChatService {
     };
     const newMessage = await this.messageRepository.create(dbMessage);
     await this.messageRepository.save(newMessage);
-    return { message: dbMessage.sender + '', sender: messageSender };
+    return { message: dbMessage.message, sender: messageSender };
   }
 
   async newClient(id: string, nickname: string): Promise<ChatClient> {
@@ -82,10 +82,11 @@ export class ChatService implements IChatService {
     await this.clientRepository.delete({ id: id });
   }
 
-  updateTyping(isTyping: boolean, id: string): ChatClient {
-    const chatClient = this.clients.find((c) => c.id === id);
-    if (chatClient && chatClient.isTyping !== isTyping) {
-      chatClient.isTyping = isTyping;
+  async updateTyping(isTyping: boolean, id: string): Promise<ChatClient> {
+    const chatClient = await this.clientRepository.findOne(id);
+    const client: ChatClient = JSON.parse(JSON.stringify(chatClient));
+    if (client && client.isTyping !== isTyping) {
+      client.isTyping = isTyping;
       return chatClient;
     }
   }

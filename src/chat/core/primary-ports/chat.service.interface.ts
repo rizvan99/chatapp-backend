@@ -11,11 +11,11 @@ export interface IChatService {
 
   getMessages(): Promise<ChatMessage[]>;
 
-  newMessage(message: string, sender: string): Promise<ChatMessage>
+  newMessage(message: string, sender: string): Promise<ChatMessage>;
 
   newClient(id: string, nickname: string): Promise<ChatClient>;
 
   delete(id: string): Promise<void>;
 
-  updateTyping(isTyping: boolean, id: string): ChatClient;
+  updateTyping(isTyping: boolean, id: string): Promise<ChatClient>
 }

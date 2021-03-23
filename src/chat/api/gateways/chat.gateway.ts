@@ -28,17 +28,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() message: string,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
-    const messageSend = this.chatService.newMessage(message, client.id);
+    const messageSend = await this.chatService.newMessage(message, client.id);
     this.server.emit('newMessage', messageSend);
   }
 
   @SubscribeMessage('typing')
-  handleTypingEvent(
+  async handleTypingEvent(
     @MessageBody() isTyping: boolean,
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     console.log('typing', isTyping);
-    const chatClient = this.chatService.updateTyping(isTyping, client.id);
+    const chatClient = await this.chatService.updateTyping(isTyping, client.id);
     if (chatClient) {
       this.server.emit('clientTyping', chatClient);
     }
@@ -68,7 +68,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket, ...args: any[]): Promise<any> {
     console.log('Client Connect', client.id);
-    client.emit('allMessages', this.chatService.getMessages());
+    client.emit('allMessages', await this.chatService.getMessages());
     this.server.emit('clients', await this.chatService.getClients());
   }
 
