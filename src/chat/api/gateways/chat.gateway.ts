@@ -14,6 +14,9 @@ import {
   IChatService,
   IChatServiceProvider,
 } from '../../core/primary-ports/chat.service.interface';
+import { JoinChatDto } from '../dto/join-chat.dto';
+import { ChatClient } from '../../core/models/chat-client.model';
+import { ChatMessage } from '../../core/models/chat-message.model';
 
 @WebSocketGateway()
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -25,10 +28,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('message')
   async handleChatEvent(
-    @MessageBody() message: string,
+    @MessageBody() msg: ChatMessage,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
-    const messageSend = await this.chatService.newMessage(message, client.id);
+    const messageSend = await this.chatService.newMessage(
+      msg.message,
+      msg.sender.id,
+    );
     this.server.emit('newMessage', messageSend);
   }
 
@@ -44,13 +50,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('nickname')
-  async handleNicknameEvent(
-    @MessageBody() nickname: string,
+  @SubscribeMessage('joinChat')
+  async handleJoinChatEvent(
+    @MessageBody() joinChatDto: JoinChatDto,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     try {
-      const newClient = await this.chatService.newClient(client.id, nickname);
+      let newClient: ChatClient = JSON.parse(JSON.stringify(joinChatDto));
+      newClient = await this.chatService.newClient(newClient);
       const chatClients = await this.chatService.getClients();
       const welcome: WelcomeDto = {
         clients: chatClients,
@@ -60,7 +67,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('welcome', welcome);
       this.server.emit('clients', chatClients);
     } catch (e) {
-      //this.server.emit('chat-error', e.message);
+      //this.server.emit('chat-error', e.message);x½
       client.error(e.message);
       console.log(e.message);
     }

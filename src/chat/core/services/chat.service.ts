@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import Client from '../../infrastructure/data-source/entities/client.entity';
 import { Repository } from 'typeorm';
 import Message from '../../infrastructure/data-source/entities/message.entity';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ChatService implements IChatService {
@@ -24,7 +25,9 @@ export class ChatService implements IChatService {
   }
 
   async getMessages(): Promise<ChatMessage[]> {
-    const messages = await this.messageRepository.find();
+    const messages = await this.messageRepository.find({
+      relations: ['sender'],
+    });
     const chatMessages: ChatMessage[] = JSON.parse(JSON.stringify(messages));
     return chatMessages;
   }
@@ -47,7 +50,7 @@ export class ChatService implements IChatService {
     return { message: dbMessage.message, sender: messageSender };
   }
 
-  async newClient(id: string, nickname: string): Promise<ChatClient> {
+  async newClient(chatClient: ChatClient): Promise<ChatClient> {
     /*
     const chatClient = this.clients.find(
       (c) => c.nickname === nickname && c.id === id,
@@ -60,22 +63,22 @@ export class ChatService implements IChatService {
     } */
     //chatClient = { id: id, nickname: nickname };
     //this.clients.push(chatClient);
-    const dbClient = await this.clientRepository.findOne({
-      nickname: nickname,
-    });
 
-    if (!dbClient) {
-      let client = this.clientRepository.create();
-      client.nickname = nickname;
-      client.id = id;
-      client = await this.clientRepository.save(client);
-      return { id: client.id + '', nickname: client.nickname };
+    const chatClientFoundById = await this.clientRepository.findOne({id: chatClient.id});
+    if(chatClientFoundById) {
+      return JSON.parse(JSON.stringify(chatClientFoundById));
     }
-    if (dbClient.id === id) {
-      return { id: dbClient.id, nickname: dbClient.nickname };
-    } else {
-      throw new Error('Nickname is already taken');
+    const chatClientFoundByNickname = await this.clientRepository.findOne({
+      nickname: chatClient.nickname,
+    });
+    if (chatClientFoundByNickname) {
+      throw new Error('Nickname already used!');
     }
+    let client = this.clientRepository.create();
+    client.nickname = chatClient.nickname;
+    client = await this.clientRepository.save(client);
+    const newChatClient = JSON.parse(JSON.stringify(client));
+    return newChatClient;
   }
 
   async delete(id: string): Promise<void> {
@@ -87,7 +90,7 @@ export class ChatService implements IChatService {
     const client: ChatClient = JSON.parse(JSON.stringify(chatClient));
     if (client && client.isTyping !== isTyping) {
       client.isTyping = isTyping;
-      return chatClient;
+      return client;
     }
   }
 }
